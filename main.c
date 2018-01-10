@@ -41,7 +41,7 @@ uint32_t concat_flip(uint16_t a, uint16_t b){
 struct WavHeader setParams(int numchannels, int bitdepth, int srate, unsigned int lengthms){
     struct WavHeader a;
     
-    a.numsamples = srate*(unsigned long)(1000/lengthms);   
+    a.numsamples = (unsigned long)(srate*(lengthms/1000.0));   
     // set fields
     a.Subchunk2Size = (a.numsamples*numchannels*bitdepth)/8; ; //adjust if dynamic length
     a.Subchunk2ID = swap4(0x64617461); //"data"
@@ -86,29 +86,36 @@ void writeWav(const char* fstring, writecb cb, int numchannels, int bitdepth, in
    // write header
    fwrite(a.header, 4 , 22 , f );
    // fill data
-   cb(data, a.Subchunk2Size, a.BitsPerSample/8);
+   cb(data, a.Subchunk2Size/a.NumChannels, a.BitsPerSample/8);
    // write data
    fwrite(data, 1, a.Subchunk2Size, f);
    fclose(f);
        
 }
 
-double phase = 0; 
+double phase = 0, phase2 = 0; 
 double step = 3.141592653589*440/44100.0;
+double step2 = 3.141592653589*400/44100.0;
 
-void writeCallBack(uint8_t* data, unsigned long num_bytes, unsigned int frame_size){
+void writeCallBack(uint8_t* data, unsigned long num_frames, unsigned int frame_size){
 
-    for(unsigned int i = 0; i < num_bytes; i+=frame_size){
+    for(unsigned int i = 0; i < num_frames; i+=frame_size){
          uint16_t sig = (uint16_t)(sin(phase)*5000);
-         phase += step;
-         data[i] = sig & 0xff;
-         data[i+1] = sig >> 8; 
+         phase += step;      
+         uint16_t sig2 = (uint16_t)(sin(phase2)*5000);
+         phase2 += step2;
+         //left
+         *data++ = sig & 0xff;
+         *data++ = sig >> 8;
+         // right
+         *data++ = sig2 & 0xff;
+         *data++ = sig2 >> 8; 
     }   
     
 }
 
 int main(int argc, char** argv) {     
-    writeWav("thewav.wav", writeCallBack, 1, 16, 44100, 1000);
+    writeWav("thewav.wav", writeCallBack, 2, 16, 44100, 3000);
     return 0;
 }
 
