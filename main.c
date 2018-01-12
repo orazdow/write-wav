@@ -73,14 +73,14 @@ struct WavHeader setParams(int numchannels, int bitdepth, int srate, unsigned in
 }
 
 // write callback prototype
-typedef void(*writecb)(uint8_t* data, unsigned long num_bytes, unsigned int frame_size);
+typedef void(*writecb)(uint16_t* data, unsigned long num_bytes, unsigned int frame_size);
 
 // write wav file
 void writeWav(const char* fstring, writecb cb, int numchannels, int bitdepth, int srate, unsigned int lengthms){
    
    struct WavHeader a = setParams(numchannels, bitdepth, srate, lengthms);  
-   uint8_t data[a.Subchunk2Size]; 
-    
+   uint16_t data[a.Subchunk2Size/2]; 
+   
    FILE *f;
    f = fopen(fstring, "wb" );
    // write header
@@ -97,7 +97,7 @@ double phase = 0, phase2 = 0;
 double step = 3.141592653589*440/44100.0;
 double step2 = 3.141592653589*400/44100.0;
 
-void writeCallBack(uint8_t* data, unsigned long num_frames, unsigned int frame_size){
+void writeCallBack(uint16_t* data, unsigned long num_frames, unsigned int frame_size){
 
     for(unsigned int i = 0; i < num_frames; i+=frame_size){
          uint16_t sig = (uint16_t)(sin(phase)*5000);
@@ -105,11 +105,9 @@ void writeCallBack(uint8_t* data, unsigned long num_frames, unsigned int frame_s
          uint16_t sig2 = (uint16_t)(sin(phase2)*5000);
          phase2 += step2;
          //left
-         *data++ = sig & 0xff;
-         *data++ = sig >> 8;
+         *data++ = sig;
          // right
-         *data++ = sig2 & 0xff;
-         *data++ = sig2 >> 8; 
+         *data++ = sig2;
     }   
     
 }
